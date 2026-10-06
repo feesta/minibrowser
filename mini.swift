@@ -81,10 +81,15 @@ class Bar: NSView {
     }
 }
 func dbg(_ s: String) { if ProcessInfo.processInfo.environment["MINI_DEBUG"] != nil { FileHandle.standardError.write((s + "\n").data(using: .utf8)!) } }
-func show(_ on: Bool) {
+func show(_ on: Bool) {   // 50ms fade, both ways; the traffic lights ride along
     dbg("show \(on) editing=\(field.currentEditor() != nil)")
-    bar.alphaValue = on ? 1 : 0
-    for b in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] { win.standardWindowButton(b)?.isHidden = !on }
+    let lights = [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].compactMap { win.standardWindowButton($0) }
+    if on { lights.forEach { $0.isHidden = false } }
+    NSAnimationContext.runAnimationGroup({ c in
+        c.duration = 0.05
+        bar.animator().alphaValue = on ? 1 : 0
+        lights.forEach { $0.animator().alphaValue = on ? 1 : 0 }
+    }, completionHandler: { if !on, bar.alphaValue == 0 { lights.forEach { $0.isHidden = true } } })
 }
 
 let bar = Bar(frame: NSRect(x: 0, y: H - barH, width: W, height: barH))
