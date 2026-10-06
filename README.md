@@ -1,7 +1,9 @@
 # mini
 
 A one-window WebKit browser for macOS, ~110–135 MB all in, in the Putty & Ink
-style. No tabs, no extensions, no sync. Just a URL bar and a page.
+style. No tabs, no extensions, no sync. The page fills the whole window; move the
+mouse to the top edge and a bar appears with back, forward, the address and a
+reload button that turns into stop while a page is loading.
 
 ```
 ./build.sh
@@ -10,8 +12,9 @@ style. No tabs, no extensions, no sync. Just a URL bar and a page.
 ./mini ~/some/page.html
 ```
 
-Keys: ⌘L focus the bar · ⌘R reload · ⌘[ back · ⌘] forward · ⌘Q quit.
-Closing the window quits. The bar's border turns orange while a page loads.
+Keys: ⌘L show the bar and focus the address (esc hides it) · ⌘R reload · ⌘[ back · ⌘] forward · ⌘Q quit.
+Closing the window quits. The address border turns orange while a page loads.
+Set MINI_DEBUG=1 to log the bar's show/hide events to stderr.
 
 Nothing persists. The web view uses WebKit's non-persistent data store, so
 cookies, cache, local storage, IndexedDB and history live in memory and vanish
