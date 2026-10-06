@@ -127,7 +127,7 @@ func go(_ s: String) {
     let t = s.trimmingCharacters(in: .whitespaces)
     guard !t.isEmpty else { return }
     var u: URL?
-    if let x = URL(string: t), let sc = x.scheme?.lowercased(), ["http", "https", "file", "about"].contains(sc) {
+    if let x = URL(string: t), let sc = x.scheme?.lowercased(), ["http", "https", "file"].contains(sc) {
         u = x   // a real scheme; "host:8001" also parses as a scheme, so anything else falls through
     } else {
         let p = (t as NSString).expandingTildeInPath
@@ -167,7 +167,7 @@ class Ctl: NSObject, NSWindowDelegate, WKNavigationDelegate, NSApplicationDelega
     // orange means one thing here: loading
     func webView(_ w: WKWebView, decidePolicyFor a: WKNavigationAction, decisionHandler d: @escaping (WKNavigationActionPolicy) -> Void) {
         let sc = a.request.url?.scheme?.lowercased() ?? ""
-        d(["http", "https", "file", "about", "blob", "data"].contains(sc) ? .allow : .cancel)   // never hand a url to the system
+        d(["http", "https", "file", "about", "blob", "data"].contains(sc) ? .allow : .cancel)   // http, https, file, plus webkit-internal pseudo-schemes that never leave the process; nothing is ever handed to another app
     }
     func webView(_ w: WKWebView, didStartProvisionalNavigation n: WKNavigation!) { box.layer!.borderColor = accent.cgColor; sync() }
     func webView(_ w: WKWebView, didCommit n: WKNavigation!) { sync() }
