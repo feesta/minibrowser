@@ -125,5 +125,6 @@ let here = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPat
 if CommandLine.arguments.count > 1 { go(CommandLine.arguments[1]) }
 else { go(here.appendingPathComponent("home.html").path) }
 win.makeKeyAndOrderFront(nil)
+win.makeFirstResponder(web)
 app.activate(ignoringOtherApps: true)
 app.run()
