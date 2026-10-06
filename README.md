@@ -2,8 +2,12 @@
 
 A one-window WebKit browser for macOS, ~110–135 MB all in, in the Putty & Ink
 style. No tabs, no extensions, no sync. The page fills the whole window; move the
-mouse to the top edge and the page slides down to make room for a bar with back, forward, the address and a
-reload button that turns into stop while a page is loading. Drag the bar's putty
+mouse to the top edge and the window grows upward by a strip for a bar with back,
+forward, the address and a reload button that turns into stop while a page is
+loading; the page itself never moves. The bar stays up while the mouse is in it or
+in the strip of page just below it, then the window shrinks back. (At the very top
+of the screen there is no room to grow, so the window slides down for the bar
+and back up after.) Drag the bar's putty
 background to move the window, the way a title bar would. Only http, https and
 file urls load; a page or link that points at any other scheme is dropped, so nothing
 in the browser can ever open another app.
