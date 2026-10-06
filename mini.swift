@@ -86,15 +86,20 @@ class Bar: NSView {
     }
 }
 func dbg(_ s: String) { if ProcessInfo.processInfo.environment["MINI_DEBUG"] != nil { FileHandle.standardError.write((s + "\n").data(using: .utf8)!) } }
+func placeWeb(under barShown: Bool) {   // the bar sits above the page, never over it
+    var f = root.bounds
+    if barShown { f.size.height -= barH }
+    if web.frame != f { web.frame = f }
+}
 func show(_ on: Bool) {   // 50ms fade, both ways; the traffic lights ride along
     dbg("show \(on) editing=\(field.currentEditor() != nil)")
     let lights = [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].compactMap { win.standardWindowButton($0) }
-    if on { lights.forEach { $0.isHidden = false } }
+    if on { lights.forEach { $0.isHidden = false }; placeWeb(under: true) }
     NSAnimationContext.runAnimationGroup({ c in
         c.duration = 0.05
         bar.animator().alphaValue = on ? 1 : 0
         lights.forEach { $0.animator().alphaValue = on ? 1 : 0 }
-    }, completionHandler: { if !on, bar.alphaValue == 0 { lights.forEach { $0.isHidden = true } } })
+    }, completionHandler: { if !on, bar.alphaValue == 0 { lights.forEach { $0.isHidden = true }; placeWeb(under: false) } })
 }
 
 let bar = Bar(frame: NSRect(x: 0, y: H - barH, width: W, height: barH))
