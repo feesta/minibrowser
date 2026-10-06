@@ -1,0 +1,334 @@
+/* putty-ink.css — the Putty & Ink design system for the web.
+   Flat putty panels, ink monospace, signal orange, hard 1.5px borders.
+   Light-only by design: see STYLE.md.
+   Tokens and classes keep the `pl-` prefix from the original Plenty build. */
+
+:root {
+  /* Surfaces */
+  --pl-bg:        #EAE8E1;   /* putty faceplate */
+  --pl-panel:     #F4F2EC;   /* one step lighter: cards, buttons */
+
+  /* Ink */
+  --pl-ink:       #1A1A1A;
+  --pl-ink-faint: rgba(26, 26, 26, 0.55);
+  --pl-hairline:  rgba(26, 26, 26, 0.18);  /* list separators */
+  --pl-border:    rgba(26, 26, 26, 0.90);  /* object cut-out stroke */
+
+  /* Accent */
+  --pl-accent:    #FF4A00;
+
+  /* Hardware chips: the entire content color budget */
+  --pl-chip-orange: #FF4A00;
+  --pl-chip-ink:    #1A1A1A;
+  --pl-chip-blue:   #0057FF;
+  --pl-chip-yellow: #FFC700;
+  --pl-chip-green:  #00A152;
+  --pl-chip-gray:   #CCC7BD;
+
+  /* Type */
+  --pl-font: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Roboto Mono", monospace;
+  --pl-size-display: 22px;
+  --pl-size-title:   17px;
+  --pl-size-item:    15px;
+  --pl-size-body:    13px;
+  --pl-size-label:   12px;
+  --pl-size-meta:    11px;
+
+  --pl-track-display: 0.14em;
+  --pl-track-title:   0.12em;
+  --pl-track-label:   0.125em;
+
+  /* Structure */
+  --pl-stroke:    1.5px;
+  --pl-radius-sm: 8px;
+  --pl-radius-md: 12px;
+  --pl-tap:       44px;
+
+  /* Motion */
+  --pl-press: 80ms ease-out;
+  --pl-fade:  600ms ease-in-out;
+  --pl-zoom:  450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body {
+  margin: 0;
+  background: var(--pl-bg);
+  color: var(--pl-ink);
+  font-family: var(--pl-font);
+  font-size: var(--pl-size-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Type ---------------------------------------------------------------- */
+
+.pl-display {
+  font-size: var(--pl-size-display);
+  font-weight: 800;
+  letter-spacing: var(--pl-track-display);
+  text-transform: uppercase;
+}
+
+.pl-title {
+  font-size: var(--pl-size-title);
+  font-weight: 800;
+  letter-spacing: var(--pl-track-title);
+  text-transform: uppercase;
+}
+
+.pl-label {
+  font-size: var(--pl-size-label);
+  font-weight: 700;
+  letter-spacing: var(--pl-track-label);
+  text-transform: uppercase;
+}
+
+.pl-meta {
+  font-size: var(--pl-size-meta);
+  font-weight: 400;
+  color: var(--pl-ink-faint);
+}
+
+/* Machined numerics: 001, 0:00, 12.4 MB */
+.pl-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* --- Objects ------------------------------------------------------------- */
+
+.pl-card {
+  background: var(--pl-panel);
+  border: var(--pl-stroke) solid var(--pl-border);
+  border-radius: var(--pl-radius-md);
+  padding: 10px 12px;
+}
+
+/* Inverted status strip: how this system says "degraded mode" */
+.pl-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--pl-radius-sm);
+  background: var(--pl-ink);
+  color: var(--pl-panel);
+}
+
+.pl-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pl-accent);
+  flex: none;
+}
+
+/* --- Section header ------------------------------------------------------ */
+
+.pl-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Row ----------------------------------------------------------------- */
+
+.pl-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--pl-hairline);
+  cursor: pointer;
+}
+
+.pl-row__index {
+  width: 30px;
+  flex: none;
+  font-size: var(--pl-size-meta);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--pl-ink-faint);
+}
+
+.pl-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pl-row__title {
+  font-size: var(--pl-size-body);
+  font-weight: 600;
+}
+
+.pl-row--current .pl-row__title { color: var(--pl-accent); }
+
+.pl-row__meta {
+  display: flex;
+  gap: 6px;
+  font-size: var(--pl-size-meta);
+  color: var(--pl-ink-faint);
+}
+
+.pl-row__meta > .name { text-transform: uppercase; }
+
+.pl-row__status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+}
+
+/* --- Artwork / chip ------------------------------------------------------ */
+
+/* Radius is proportional so a 46px and a 320px cover read as one object.
+   Set --pl-art-size on the element. */
+.pl-art {
+  width: var(--pl-art-size, 46px);
+  height: var(--pl-art-size, 46px);
+  border-radius: calc(var(--pl-art-size, 46px) * 0.12);
+  border: var(--pl-stroke) solid var(--pl-border);
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex: none;
+}
+
+.pl-art--large { border-radius: calc(var(--pl-art-size) * 0.06); }
+
+.pl-art__initials {
+  font-weight: 800;
+  font-size: calc(var(--pl-art-size, 46px) * 0.30);
+  line-height: 1;
+}
+
+/* --- Buttons ------------------------------------------------------------- */
+
+.pl-btn {
+  width: var(--pl-btn-size, 50px);
+  height: var(--pl-btn-size, 50px);
+  border-radius: 50%;
+  border: var(--pl-stroke) solid var(--pl-border);
+  background: var(--pl-panel);
+  color: var(--pl-ink);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity var(--pl-press), transform var(--pl-press);
+}
+
+.pl-btn:active { opacity: 0.55; transform: scale(0.96); }
+
+.pl-btn--filled {
+  background: var(--pl-btn-accent, var(--pl-accent));
+  color: var(--pl-panel);
+}
+
+.pl-btn--mini      { --pl-btn-size: 38px; }
+.pl-btn--secondary { --pl-btn-size: 44px; }
+.pl-btn--primary   { --pl-btn-size: 76px; }
+
+/* The one solid-ink button: "there is one thing to do here" */
+.pl-pill {
+  border: none;
+  border-radius: 999px;
+  background: var(--pl-ink);
+  color: var(--pl-panel);
+  font-family: inherit;
+  font-size: var(--pl-size-body);
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: opacity var(--pl-press);
+}
+
+.pl-pill:active { opacity: 0.55; }
+
+/* --- Empty state --------------------------------------------------------- */
+
+.pl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 40px;
+}
+
+.pl-empty__note {
+  font-size: var(--pl-size-body);
+  color: var(--pl-ink-faint);
+  max-width: 34ch;
+  line-height: 1.5;
+}
+
+/* --- Base ---------------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:focus-visible {
+  outline: 2px solid var(--pl-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Headings inside .pl-section carry no margin of their own */
+.pl-section > h1, .pl-section > h2, .pl-section > h3 { margin: 0; }
+
+.pl-row:last-child { border-bottom: 0; }
+
+/* Glyphs inside hardware buttons scale with the button */
+.pl-btn svg { width: 42%; height: 42%; fill: currentColor; }
+.pl-btn--primary svg { width: 34%; height: 34%; }
+
+/* Status strip internals */
+.pl-strip__label { font-size: var(--pl-size-label); font-weight: 800; letter-spacing: var(--pl-track-label); text-transform: uppercase; }
+.pl-strip__count { font-size: var(--pl-size-meta); letter-spacing: 0.09em; opacity: 0.7; }
+.pl-strip svg { width: 14px; height: 14px; fill: currentColor; flex: none; }
+
+/* Empty-state display word */
+.pl-empty__word {
+  font-size: var(--pl-size-display);
+  font-weight: 800;
+  letter-spacing: var(--pl-track-display);
+  text-transform: uppercase;
+}
+
+/* --- Form input ---------------------------------------------------------- */
+
+/* Inputs sit *in* the faceplate (bg fill, hairline edge), unlike objects,
+   which sit *on* it (panel fill, 1.5px border). */
+.pl-input {
+  font-family: inherit;
+  font-size: var(--pl-size-body);
+  color: var(--pl-ink);
+  background: var(--pl-bg);
+  border: 1px solid var(--pl-hairline);
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+.pl-input::placeholder { color: var(--pl-ink-faint); }
+
+/* --- Hairline rule ------------------------------------------------------- */
+
+.pl-hairline {
+  height: 1px;
+  background: var(--pl-hairline);
+  border: 0;
+  margin: 0;
+}
+
+/* --- Forbidden ------------------------------------------------------------
+   No box-shadow. No backdrop-filter. No linear-gradient. No dark mode.
+   If a surface needs to stand out, invert it to ink or give it a border. */
