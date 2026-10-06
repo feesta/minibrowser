@@ -65,6 +65,11 @@ class HW: NSButton {
 class Bar: NSView {
     var inside = false
     override var mouseDownCanMoveWindow: Bool { true }
+    override func mouseDown(with e: NSEvent) {   // putty background drags the window, like a title bar
+        dbg("drag")
+        if field.currentEditor() != nil { ctl.leaveField() }
+        win.performDrag(with: e)
+    }
     override func hitTest(_ p: NSPoint) -> NSView? { alphaValue == 0 ? nil : super.hitTest(p) }
     override func updateTrackingAreas() {   // add first, then super: super is what registers it with the window
         if trackingAreas.first?.rect != bounds {
