@@ -70,6 +70,12 @@ class HW: NSButton {
         layer!.setAffineTransform(.identity)
     }
     func enable(_ on: Bool) { isEnabled = on; alphaValue = on ? 1 : 0.35 }
+    // an SF Symbol in place of the text glyph, drawn in ink at the glyph's size and weight
+    func symbol(_ name: String) {
+        let c = NSImage.SymbolConfiguration(pointSize: 15, weight: .bold).applying(.init(paletteColors: [ink]))
+        image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(c)
+        imagePosition = .imageOnly; title = ""
+    }
 }
 
 // Bar: lives in the strip above the page, clipped to it, invisible until the mouse arrives, lets clicks through while hidden
@@ -173,7 +179,8 @@ root.addSubview(bar)
 let y = (barH - btn) / 2
 let backBtn = HW("←", #selector(Ctl.back(_:)));       backBtn.frame.origin = NSPoint(x: lightsW, y: y)
 let fwdBtn = HW("→", #selector(Ctl.forward(_:)));    fwdBtn.frame.origin  = NSPoint(x: lightsW + btn + 8, y: y)
-let loadBtn = HW("↻", #selector(Ctl.stopOrReload(_:))); loadBtn.frame.origin = NSPoint(x: W - 12 - btn, y: y)
+let loadBtn = HW("", #selector(Ctl.stopOrReload(_:))); loadBtn.frame.origin = NSPoint(x: W - 12 - btn, y: y)
+loadBtn.symbol("arrow.clockwise")
 loadBtn.autoresizingMask = [.minXMargin]
 let boxX = lightsW + btn * 2 + 8 + 12
 let box = NSView(frame: NSRect(x: boxX, y: y, width: W - boxX - 12 - btn - 12, height: btn))
@@ -257,8 +264,7 @@ class Ctl: NSObject, NSWindowDelegate, WKNavigationDelegate, NSApplicationDelega
         }
         win.title = (web.title?.isEmpty == false ? web.title! : "mini").lowercased()
         backBtn.enable(web.canGoBack); fwdBtn.enable(web.canGoForward)
-        let g = web.isLoading ? "×" : "↻"
-        loadBtn.attributedTitle = NSAttributedString(string: g, attributes: [.font: glyph, .foregroundColor: ink])
+        loadBtn.symbol(web.isLoading ? "xmark" : "arrow.clockwise")
     }
 }
 let ctl = Ctl()
