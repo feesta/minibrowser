@@ -191,11 +191,19 @@ func go(_ s: String) {
 class Ctl: NSObject, NSWindowDelegate, WKNavigationDelegate, NSApplicationDelegate, NSTextFieldDelegate {
     func windowWillClose(_ n: Notification) { NSApp.terminate(nil) }
     func windowDidResize(_ n: Notification) { placeWeb() }
-    // belt and braces: wipe anything WebKit may have written to the default store for this app
-    func applicationWillTerminate(_ n: Notification) {
-        let done = DispatchSemaphore(value: 0)
-        WKWebsiteDataStore.default().removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) { done.signal() }
-        _ = done.wait(timeout: .now() + 2)
+    // belt and braces: wipe anything WebKit may have written to the default store for this app, then quit.
+    // The wipe reports back on the main thread, so we must not block it: say "later" and keep the run loop
+    // going until the wipe is done. Blocking on a semaphore here silently waited out its whole timeout on every quit.
+    func applicationShouldTerminate(_ a: NSApplication) -> NSApplication.TerminateReply {
+        let t0 = Date(); var replied = false
+        func finish(_ how: String) {
+            if replied { return }; replied = true
+            dbg("quit: \(how) after \(Int(Date().timeIntervalSince(t0) * 1000)) ms")
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        WKWebsiteDataStore.default().removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) { finish("wiped") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { finish("gave up on the wipe") }   // never hang on quit
+        return .terminateLater
     }
     @objc func enter(_ s: Any?) { go(field.stringValue); leaveField() }
     @objc func openLocation(_ s: Any?) { show(true); win.makeFirstResponder(field); field.selectText(nil) }
