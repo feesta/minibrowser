@@ -70,12 +70,29 @@ class HW: NSButton {
         layer!.setAffineTransform(.identity)
     }
     func enable(_ on: Bool) { isEnabled = on; alphaValue = on ? 1 : 0.35 }
-    // an SF Symbol in place of the text glyph, drawn in ink at the glyph's size and weight
-    func symbol(_ name: String) {
-        let c = NSImage.SymbolConfiguration(pointSize: 15, weight: .bold).applying(.init(paletteColors: [ink]))
-        image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(c)
-        imagePosition = .imageOnly; title = ""
+    // a drawn image in place of the text glyph, or back to the glyph when nil
+    func show(_ g: String, _ img: NSImage? = nil) {
+        image = img; imagePosition = img == nil ? .noImage : .imageOnly
+        attributedTitle = NSAttributedString(string: img == nil ? g : "", attributes: [.font: glyph, .foregroundColor: ink])
     }
+}
+
+// Reload: an open ring in the arrows' bold stroke, ending in their chevron head, turning clockwise
+let reloadIcon = NSImage(size: NSSize(width: 16, height: 16), flipped: false) { _ in
+    let c = NSPoint(x: 8, y: 7.4), r: CGFloat = 5, w: CGFloat = 2.1, leg: CGFloat = 4.2
+    let end: CGFloat = 85   // the head sits just past 12 o'clock, degrees from 3 o'clock
+    let ring = NSBezierPath()
+    ring.appendArc(withCenter: c, radius: r, startAngle: end + 300, endAngle: end, clockwise: true)
+    ring.lineWidth = w; ink.setStroke(); ring.stroke()
+    // chevron tip nudged a little past the ring's end, legs swept back 45° either side of the clockwise tangent
+    let a = end * .pi / 180, back = a + .pi / 2
+    let tip = NSPoint(x: c.x + r * cos(a) + 0.9 * sin(a), y: c.y + r * sin(a) - 0.9 * cos(a))
+    let head = NSBezierPath()
+    for s: CGFloat in [-1, 1] {
+        head.move(to: NSPoint(x: tip.x + leg * cos(back + s * .pi / 4), y: tip.y + leg * sin(back + s * .pi / 4))); head.line(to: tip)
+    }
+    head.lineWidth = w; head.lineJoinStyle = .miter; head.stroke()
+    return true
 }
 
 // Bar: lives in the strip above the page, clipped to it, invisible until the mouse arrives, lets clicks through while hidden
@@ -180,7 +197,7 @@ let y = (barH - btn) / 2
 let backBtn = HW("←", #selector(Ctl.back(_:)));       backBtn.frame.origin = NSPoint(x: lightsW, y: y)
 let fwdBtn = HW("→", #selector(Ctl.forward(_:)));    fwdBtn.frame.origin  = NSPoint(x: lightsW + btn + 8, y: y)
 let loadBtn = HW("", #selector(Ctl.stopOrReload(_:))); loadBtn.frame.origin = NSPoint(x: W - 12 - btn, y: y)
-loadBtn.symbol("arrow.clockwise")
+loadBtn.show("", reloadIcon)
 loadBtn.autoresizingMask = [.minXMargin]
 let boxX = lightsW + btn * 2 + 8 + 12
 let box = NSView(frame: NSRect(x: boxX, y: y, width: W - boxX - 12 - btn - 12, height: btn))
@@ -246,8 +263,10 @@ class Ctl: NSObject, NSWindowDelegate, WKNavigationDelegate, NSApplicationDelega
     }
     @objc func enter(_ s: Any?) { go(field.stringValue); leaveField() }
     @objc func openLocation(_ s: Any?) { show(true); win.makeFirstResponder(field); field.selectText(nil) }
-    @objc func back(_ s: Any?) { web.goBack() }
-    @objc func forward(_ s: Any?) { web.goForward() }
+    // ⌘← / ⌘→ still jump to the ends of the address while it is being typed in
+    @objc func back(_ s: Any?) { if let e = typing() { e.moveToBeginningOfLine(s) } else { web.goBack() } }
+    @objc func forward(_ s: Any?) { if let e = typing() { e.moveToEndOfLine(s) } else { web.goForward() } }
+    func typing() -> NSText? { NSApp.currentEvent?.type == .keyDown ? field.currentEditor() : nil }
     @objc func stopOrReload(_ s: Any?) { if web.isLoading { web.stopLoading(); sync() } else { web.reload() } }
     @objc func reload(_ s: Any?) { web.reload() }
     // About: a small putty panel with the name, what it is, who made it and the license
@@ -302,7 +321,7 @@ class Ctl: NSObject, NSWindowDelegate, WKNavigationDelegate, NSApplicationDelega
         }
         win.title = (web.title?.isEmpty == false ? web.title! : "mini").lowercased()
         backBtn.enable(web.canGoBack); fwdBtn.enable(web.canGoForward)
-        loadBtn.symbol(web.isLoading ? "xmark" : "arrow.clockwise")
+        loadBtn.show("×", web.isLoading ? nil : reloadIcon)
     }
 }
 let ctl = Ctl()
@@ -320,8 +339,8 @@ m.addItem(withTitle: "About mini", action: #selector(Ctl.about(_:)), keyEquivale
 m.addItem(NSMenuItem.separator())
 m.addItem(withTitle: "Open Location…", action: #selector(Ctl.openLocation(_:)), keyEquivalent: "l").target = ctl
 m.addItem(withTitle: "Reload", action: #selector(Ctl.reload(_:)), keyEquivalent: "r").target = ctl
-m.addItem(withTitle: "Back", action: #selector(Ctl.back(_:)), keyEquivalent: "[").target = ctl
-m.addItem(withTitle: "Forward", action: #selector(Ctl.forward(_:)), keyEquivalent: "]").target = ctl
+m.addItem(withTitle: "Back", action: #selector(Ctl.back(_:)), keyEquivalent: String(UnicodeScalar(NSLeftArrowFunctionKey)!)).target = ctl
+m.addItem(withTitle: "Forward", action: #selector(Ctl.forward(_:)), keyEquivalent: String(UnicodeScalar(NSRightArrowFunctionKey)!)).target = ctl
 m.addItem(NSMenuItem.separator())
 m.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 appItem.submenu = m
