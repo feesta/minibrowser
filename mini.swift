@@ -355,6 +355,7 @@ app.mainMenu = menu
 
 // Start
 let here = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent()
+if let icon = NSImage(contentsOfFile: here.appendingPathComponent("icon.png").path) { app.applicationIconImage = icon }   // Dock icon; the binary has no bundle to carry one
 if CommandLine.arguments.count > 1 { go(CommandLine.arguments[1]) }
 else { go(here.appendingPathComponent("home.html").path) }
 setReveal(0)

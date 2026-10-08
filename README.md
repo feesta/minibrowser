@@ -34,6 +34,7 @@ never open another app.
 
 - `mini.swift` – the whole app
 - `home.html`, `putty-ink.css` – the start page, loaded from the folder next to the binary
+- `icon.png` – the Dock icon, also loaded from the folder next to the binary
 - `build.sh`
 
 ## License
