@@ -27,10 +27,13 @@ win.backgroundColor = putty
 win.titleVisibility = .hidden
 win.titlebarAppearsTransparent = true
 win.appearance = NSAppearance(named: .aqua)   // light only, by design
-// Hover: the bar shows when the cursor is in the top strip, and hides once it is more than a strip below the bar.
+// Hover: the bar shows when the cursor is in the top strip, and hides 300ms after it is more than a strip below the bar.
 // That gap means the bit of page the bar used to cover stays clickable while the bar is up.
-var shown = false
-var grown = (dy: CGFloat(0), dh: CGFloat(0))   // how much the window was pushed and grown for the bar
+var shown = false                                // where the bar is headed
+var reveal: CGFloat = 0                          // where it is: 0 tucked behind the page .. 1 all the way up
+var grown = (dy: CGFloat(0), dh: CGFloat(0))     // how much the window gets pushed and grown at full reveal
+var applied = (dy: CGFloat(0), dh: CGFloat(0))   // how much of that is on the window right now
+var tide: Timer?, ebb: Timer?                    // the 150ms slide, and the 300ms wait before a hide
 func inZone() -> Bool {   // is the cursor where the bar should stay up?
     let p = root.convert(win.mouseLocationOutsideOfEventStream, from: nil)
     return root.bounds.contains(p) && root.bounds.height - p.y <= (shown ? barH * 2 : barH)
@@ -43,7 +46,7 @@ let W = root.bounds.width, H = root.bounds.height
 let cfg = WKWebViewConfiguration()
 cfg.websiteDataStore = WKWebsiteDataStore.nonPersistent()
 let web = WKWebView(frame: root.bounds, configuration: cfg)
-web.autoresizingMask = [.width, .height]
+web.autoresizingMask = [.width]   // height is placeWeb's alone, so growing the window for the bar never stretches the page
 web.setValue(false, forKey: "drawsBackground")   // putty shows through until the page paints
 root.addSubview(web)
 
@@ -69,7 +72,7 @@ class HW: NSButton {
     func enable(_ on: Bool) { isEnabled = on; alphaValue = on ? 1 : 0.35 }
 }
 
-// Bar: lives over the top strip, invisible until the mouse arrives, lets clicks through while hidden
+// Bar: lives in the strip above the page, clipped to it, invisible until the mouse arrives, lets clicks through while hidden
 class Bar: NSView {
     override var mouseDownCanMoveWindow: Bool { true }
     override func mouseDown(with e: NSEvent) {   // putty background drags the window, like a title bar
@@ -80,39 +83,57 @@ class Bar: NSView {
     override func hitTest(_ p: NSPoint) -> NSView? { alphaValue == 0 ? nil : super.hitTest(p) }
 }
 func dbg(_ s: String) { if ProcessInfo.processInfo.environment["MINI_DEBUG"] != nil { FileHandle.standardError.write((s + "\n").data(using: .utf8)!) } }
-func placeWeb() {   // the bar sits above the page, never over it
-    var f = root.bounds
-    if shown, !win.styleMask.contains(.fullScreen) { f.size.height -= barH }
+func placeWeb() {   // the bar sits above the page, never over it, in a strip as tall as it has slid up
+    let b = root.bounds, full = win.styleMask.contains(.fullScreen)
+    let strip = full ? 0 : (barH * reveal).rounded()
+    let f = NSRect(x: 0, y: 0, width: b.width, height: b.height - strip)
     if web.frame != f { web.frame = f }
+    let g = full ? NSRect(x: 0, y: b.height - barH, width: b.width, height: barH) : NSRect(x: 0, y: f.maxY, width: b.width, height: strip)
+    if bar.frame != g { bar.frame = g }   // its contents hang from its top, so they rise out from behind the page
 }
-func show(_ on: Bool) {   // the window grows up by a strip for the bar and shrinks back after; 50ms fade both ways, traffic lights with it
+var lights: [NSButton] { [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].compactMap { win.standardWindowButton($0) } }
+func setReveal(_ p: CGFloat) {   // window, page, bar and traffic lights all where p says; the page only moves if the window has to slide down
+    reveal = p
+    if !win.styleMask.contains(.fullScreen) {
+        let want = (dy: (grown.dy * p).rounded(), dh: (grown.dh * p).rounded())
+        var t = win.frame; t.origin.y += want.dy - applied.dy; t.size.height += want.dh - applied.dh
+        applied = want
+        if t != win.frame { win.setFrame(t, display: true) }
+    }
+    placeWeb()
+    bar.alphaValue = p
+    lights.forEach { $0.isHidden = p == 0; $0.alphaValue = p }
+}
+func show(_ on: Bool, after wait: TimeInterval = 0) {   // the window grows up for the bar as it slides out from behind the page, fading in, and back after; 150ms ease-out both ways
+    if !on, wait > 0 {   // the mouse wandered off: hide in a moment, unless it comes back first
+        if shown, ebb == nil {
+            ebb = Timer(timeInterval: wait, repeats: false) { _ in ebb = nil; if field.currentEditor() == nil { show(false) } }
+            RunLoop.main.add(ebb!, forMode: .common)
+        }
+        return
+    }
+    ebb?.invalidate(); ebb = nil
     guard on != shown else { return }
     shown = on
-    dbg("show \(on) editing=\(field.currentEditor() != nil)")
-    let lights = [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].compactMap { win.standardWindowButton($0) }
-    if on {
-        if !win.styleMask.contains(.fullScreen) {
-            let f = win.frame
-            var t = f; t.size.height += barH   // same origin: the top edge moves up, the page stays put
-            t = win.constrainFrameRect(t, to: win.screen)   // no room above the menu bar: the window slides down instead
-            grown = (t.origin.y - f.origin.y, t.height - f.height)
-            win.setFrame(t, display: true)
-            dbg("grew \(f) -> \(win.frame) grown=\(grown)")
-        }
-        placeWeb()
-        lights.forEach { $0.isHidden = false }
+    dbg("show \(on) editing=\(field.currentEditor() != nil) from=\(reveal)")
+    if on, reveal == 0, !win.styleMask.contains(.fullScreen) {
+        let f = win.frame
+        var t = f; t.size.height += barH   // same origin: the top edge moves up, the page stays put
+        t = win.constrainFrameRect(t, to: win.screen)   // no room above the menu bar: the window slides down instead
+        grown = (t.origin.y - f.origin.y, t.height - f.height); applied = (0, 0)
+        dbg("growing \(f) by \(grown)")
     }
-    NSAnimationContext.runAnimationGroup({ c in
-        c.duration = 0.05
-        bar.animator().alphaValue = on ? 1 : 0
-        lights.forEach { $0.animator().alphaValue = on ? 1 : 0 }
-    }, completionHandler: {
-        guard !on, !shown else { return }
-        lights.forEach { $0.isHidden = true }
-        var t = win.frame; t.origin.y -= grown.dy; t.size.height -= grown.dh; grown = (0, 0)
-        if t != win.frame { win.setFrame(t, display: true) }
-        placeWeb()
-    })
+    // ease-out cubic each way, picked up from wherever the bar is on the curve, so turning back mid-slide never jumps
+    tide?.invalidate()
+    let ease = { (c: CGFloat) in 1 - pow(1 - c, 3) }
+    var c = 1 - cbrt(on ? 1 - reveal : reveal), last = CACurrentMediaTime()
+    tide = Timer(timeInterval: 1.0 / 120, repeats: true) { t in
+        let now = CACurrentMediaTime()
+        c = min(1, c + CGFloat((now - last) / 0.15)); last = now
+        setReveal(on ? ease(c) : 1 - ease(c))
+        if c == 1 { t.invalidate(); tide = nil; if !on { grown = (0, 0) } }
+    }
+    RunLoop.main.add(tide!, forMode: .common)
 }
 
 // Zone: see-through, covers the window, watches the cursor; clicks go straight through to the page
@@ -129,12 +150,12 @@ class Zone: NSView {
     override func mouseMoved(with e: NSEvent) { track(e) }
     override func mouseExited(with e: NSEvent) {
         if bounds.contains(convert(e.locationInWindow, from: nil)) { return }   // relayout noise, still inside
-        dbg("left window"); if shown, field.currentEditor() == nil { show(false) }
+        dbg("left window"); if shown, field.currentEditor() == nil { show(false, after: 0.3) }
     }
     func track(_ e: NSEvent) {
         let fromTop = bounds.height - convert(e.locationInWindow, from: nil).y
-        if !shown, fromTop <= barH { show(true) }
-        else if shown, fromTop > barH * 2, field.currentEditor() == nil { show(false) }
+        if fromTop <= (shown ? barH * 2 : barH) { show(true) }   // back in the zone also calls off a pending hide
+        else if shown, field.currentEditor() == nil { show(false, after: 0.3) }
     }
 }
 let zone = Zone(frame: root.bounds)
@@ -145,6 +166,7 @@ let bar = Bar(frame: NSRect(x: 0, y: H - barH, width: W, height: barH))
 bar.autoresizingMask = [.width, .minYMargin]
 bar.wantsLayer = true
 bar.layer!.backgroundColor = putty.cgColor
+bar.layer!.masksToBounds = true
 root.addSubview(bar)
 
 let y = (barH - btn) / 2
@@ -165,7 +187,7 @@ field.font = mono; field.textColor = ink
 field.placeholderAttributedString = NSAttributedString(string: "url or file",
     attributes: [.font: mono, .foregroundColor: ink.withAlphaComponent(0.55)])
 box.addSubview(field)
-[backBtn, fwdBtn, box, loadBtn].forEach(bar.addSubview)
+[backBtn, fwdBtn, box, loadBtn].forEach { $0.autoresizingMask.insert(.minYMargin); bar.addSubview($0) }   // pinned to the bar's top edge
 
 func go(_ s: String) {
     let t = s.trimmingCharacters(in: .whitespaces)
@@ -261,8 +283,7 @@ app.mainMenu = menu
 let here = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent()
 if CommandLine.arguments.count > 1 { go(CommandLine.arguments[1]) }
 else { go(here.appendingPathComponent("home.html").path) }
-bar.alphaValue = 0
-[NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].forEach { win.standardWindowButton($0)?.isHidden = true }
+setReveal(0)
 ctl.sync()
 win.makeKeyAndOrderFront(nil)
 win.makeFirstResponder(web)
