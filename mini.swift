@@ -123,18 +123,11 @@ func show(_ on: Bool, after wait: TimeInterval = 0) {   // the window grows up f
         grown = (t.origin.y - f.origin.y, t.height - f.height); applied = (0, 0)
         dbg("growing \(f) by \(grown)")
     }
-    // up: ease-out-back, a ~10% overshoot that settles, for a little pop; down: ease-out cubic.
+    // up: ease-out quint, a quick pop that lands without overshooting; down: ease-out cubic.
     // picked up from wherever the bar is on the curve, so turning back mid-slide never jumps
     tide?.invalidate()
-    let k: CGFloat = 1.70158
-    let pop = { (c: CGFloat) in 1 + (k + 1) * pow(c - 1, 3) + k * pow(c - 1, 2) }
-    let ease = { (c: CGFloat) in on ? pop(c) : 1 - pow(1 - c, 3) }
-    var c: CGFloat = 1 - cbrt(reveal), last = CACurrentMediaTime()
-    if on {   // find reveal on the rising part of the pop curve, which peaks at c = 1 - 2k/3(k+1)
-        var lo: CGFloat = 0, hi: CGFloat = 1 - 2 * k / (3 * (k + 1))
-        for _ in 0..<20 { let m = (lo + hi) / 2; if pop(m) < reveal { lo = m } else { hi = m } }
-        c = lo
-    }
+    let ease = { (c: CGFloat) in on ? 1 - pow(1 - c, 5) : pow(1 - c, 3) }
+    var c = on ? 1 - pow(1 - reveal, 0.2) : 1 - cbrt(reveal), last = CACurrentMediaTime()
     tide = Timer(timeInterval: 1.0 / 120, repeats: true) { t in
         let now = CACurrentMediaTime()
         c = min(1, c + CGFloat((now - last) / 0.15)); last = now
