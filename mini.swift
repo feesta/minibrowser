@@ -354,10 +354,13 @@ editItem.submenu = e
 app.mainMenu = menu
 
 // Start
-let here = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent()
-// Dock icon. macOS rounds the corners of a bundled app's icon itself, but a bare binary's image shows as-is,
-// so mask icon.png here the way the Dock would: the shape fills 824 of a 1024 canvas with clear margin around it.
-if let png = NSImage(contentsOfFile: here.appendingPathComponent("icon.png").path) {
+// Resources sit next to a bare binary, or in Contents/Resources when running as mini.app (see build.sh).
+let exeDir = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent()
+let bundled = Bundle.main.bundleURL.pathExtension == "app"
+let here = bundled ? (Bundle.main.resourceURL ?? exeDir) : exeDir
+// Dock icon. A bundled app gets its icon from Info.plist and macOS shapes it itself, but a bare binary's image
+// shows as-is, so mask icon.png here the way the Dock would: the shape fills 824 of a 1024 canvas with clear margin around it.
+if !bundled, let png = NSImage(contentsOfFile: here.appendingPathComponent("icon.png").path) {
     let side: CGFloat = 1024, inset: CGFloat = 100
     let shape = NSRect(x: inset, y: inset, width: side - 2 * inset, height: side - 2 * inset)
     app.applicationIconImage = NSImage(size: NSSize(width: side, height: side), flipped: false) { _ in
@@ -366,7 +369,8 @@ if let png = NSImage(contentsOfFile: here.appendingPathComponent("icon.png").pat
         return true
     }
 }
-if CommandLine.arguments.count > 1 { go(CommandLine.arguments[1]) }
+// Finder and `open` can pass flags; the first plain argument is the url.
+if let first = CommandLine.arguments.dropFirst().first(where: { !$0.hasPrefix("-") }) { go(first) }
 else { go(here.appendingPathComponent("home.html").path) }
 setReveal(0)
 ctl.sync()
