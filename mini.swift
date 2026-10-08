@@ -355,7 +355,17 @@ app.mainMenu = menu
 
 // Start
 let here = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath().deletingLastPathComponent()
-if let icon = NSImage(contentsOfFile: here.appendingPathComponent("icon.png").path) { app.applicationIconImage = icon }   // Dock icon; the binary has no bundle to carry one
+// Dock icon. macOS rounds the corners of a bundled app's icon itself, but a bare binary's image shows as-is,
+// so mask icon.png here the way the Dock would: the shape fills 824 of a 1024 canvas with clear margin around it.
+if let png = NSImage(contentsOfFile: here.appendingPathComponent("icon.png").path) {
+    let side: CGFloat = 1024, inset: CGFloat = 100
+    let shape = NSRect(x: inset, y: inset, width: side - 2 * inset, height: side - 2 * inset)
+    app.applicationIconImage = NSImage(size: NSSize(width: side, height: side), flipped: false) { _ in
+        NSBezierPath(roundedRect: shape, xRadius: shape.width * 0.2237, yRadius: shape.width * 0.2237).addClip()
+        png.draw(in: shape)
+        return true
+    }
+}
 if CommandLine.arguments.count > 1 { go(CommandLine.arguments[1]) }
 else { go(here.appendingPathComponent("home.html").path) }
 setReveal(0)
