@@ -256,8 +256,7 @@ class Ctl: NSObject, NSWindowDelegate, WKNavigationDelegate, NSApplicationDelega
         if aboutPanel == nil {
             let w: CGFloat = 420, pad: CGFloat = 24, inner = w - pad * 2, faint = ink.withAlphaComponent(0.55)
             let lines: [(String, CGFloat, NSFont.Weight, NSColor, CGFloat, CGFloat)] = [   // text, size, weight, color, kern, gap below
-                ("mini", 22, .bold, ink, 3, 6),
-                ("a one-window webkit browser for macOS that forgets everything on quit", 13, .semibold, ink, 0, 14),
+                ("mini browser", 22, .bold, ink, 3, 6),
                 ("© 2026 jeff easter · mit license\nbuilt on apple's appkit and webkit; no third-party code", 12, .regular, faint, 0, 14),
                 (mit.trimmingCharacters(in: .newlines), 11, .regular, faint, 0, 0),
             ]

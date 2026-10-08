@@ -25,7 +25,7 @@ with back, forward, the address and a reload button that turns into stop while
 a page loads. It tucks away again when the mouse leaves. Drag the bar's
 background to move the window.
 
-⌘L address bar · ⌘R reload · ⌘[ back · ⌘] forward · ⌘Q quit
+⌘L address bar · ⌘R reload · ⌘← back · ⌘→ forward · ⌘Q quit
 
 Only http, https and file URLs load. Anything else is dropped, so a page can
 never open another app.
