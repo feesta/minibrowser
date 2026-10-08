@@ -21,7 +21,7 @@ in the browser can ever open another app.
 ./mini ~/some/page.html
 ```
 
-Keys: ⌘L show the bar and focus the address (esc hides it) · ⌘R reload · ⌘[ back · ⌘] forward · ⌘Q quit.
+Keys: ⌘L show the bar and focus the address (esc hides it) · ⌘R reload · ⌘← back · ⌘→ forward · ⌘Q quit.
 Closing the window quits. The address border turns orange while a page loads.
 Set MINI_DEBUG=1 to log the bar's show/hide events to stderr.
 
