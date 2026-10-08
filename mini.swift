@@ -27,13 +27,13 @@ win.backgroundColor = putty
 win.titleVisibility = .hidden
 win.titlebarAppearsTransparent = true
 win.appearance = NSAppearance(named: .aqua)   // light only, by design
-// Hover: the bar shows when the cursor is in the top strip, and hides 300ms after it is more than a strip below the bar.
+// Hover: the bar shows when the cursor is in the top strip, and hides 350ms after it is more than a strip below the bar.
 // That gap means the bit of page the bar used to cover stays clickable while the bar is up.
 var shown = false                                // where the bar is headed
 var reveal: CGFloat = 0                          // where it is: 0 tucked behind the page .. 1 all the way up
 var grown = (dy: CGFloat(0), dh: CGFloat(0))     // how much the window gets pushed and grown at full reveal
 var applied = (dy: CGFloat(0), dh: CGFloat(0))   // how much of that is on the window right now
-var tide: Timer?, ebb: Timer?                    // the 150ms slide, and the 300ms wait before a hide
+var tide: Timer?, ebb: Timer?                    // the 150ms slide, and the 350ms wait before a hide
 func inZone() -> Bool {   // is the cursor where the bar should stay up?
     let p = root.convert(win.mouseLocationOutsideOfEventStream, from: nil)
     return root.bounds.contains(p) && root.bounds.height - p.y <= (shown ? barH * 2 : barH)
@@ -104,7 +104,7 @@ func setReveal(_ p: CGFloat) {   // window, page, bar and traffic lights all whe
     bar.alphaValue = p
     lights.forEach { $0.isHidden = p == 0; $0.alphaValue = p }
 }
-func show(_ on: Bool, after wait: TimeInterval = 0) {   // the window grows up for the bar as it slides out from behind the page, fading in, and back after; 150ms ease-out both ways
+func show(_ on: Bool, after wait: TimeInterval = 0) {   // the window grows up for the bar as it slides out from behind the page, fading in, and back after; 150ms, popping up and easing down
     if !on, wait > 0 {   // the mouse wandered off: hide in a moment, unless it comes back first
         if shown, ebb == nil {
             ebb = Timer(timeInterval: wait, repeats: false) { _ in ebb = nil; if field.currentEditor() == nil { show(false) } }
@@ -123,14 +123,22 @@ func show(_ on: Bool, after wait: TimeInterval = 0) {   // the window grows up f
         grown = (t.origin.y - f.origin.y, t.height - f.height); applied = (0, 0)
         dbg("growing \(f) by \(grown)")
     }
-    // ease-out cubic each way, picked up from wherever the bar is on the curve, so turning back mid-slide never jumps
+    // up: ease-out-back, a ~10% overshoot that settles, for a little pop; down: ease-out cubic.
+    // picked up from wherever the bar is on the curve, so turning back mid-slide never jumps
     tide?.invalidate()
-    let ease = { (c: CGFloat) in 1 - pow(1 - c, 3) }
-    var c = 1 - cbrt(on ? 1 - reveal : reveal), last = CACurrentMediaTime()
+    let k: CGFloat = 1.70158
+    let pop = { (c: CGFloat) in 1 + (k + 1) * pow(c - 1, 3) + k * pow(c - 1, 2) }
+    let ease = { (c: CGFloat) in on ? pop(c) : 1 - pow(1 - c, 3) }
+    var c: CGFloat = 1 - cbrt(reveal), last = CACurrentMediaTime()
+    if on {   // find reveal on the rising part of the pop curve, which peaks at c = 1 - 2k/3(k+1)
+        var lo: CGFloat = 0, hi: CGFloat = 1 - 2 * k / (3 * (k + 1))
+        for _ in 0..<20 { let m = (lo + hi) / 2; if pop(m) < reveal { lo = m } else { hi = m } }
+        c = lo
+    }
     tide = Timer(timeInterval: 1.0 / 120, repeats: true) { t in
         let now = CACurrentMediaTime()
         c = min(1, c + CGFloat((now - last) / 0.15)); last = now
-        setReveal(on ? ease(c) : 1 - ease(c))
+        setReveal(ease(c))
         if c == 1 { t.invalidate(); tide = nil; if !on { grown = (0, 0) } }
     }
     RunLoop.main.add(tide!, forMode: .common)
@@ -150,12 +158,12 @@ class Zone: NSView {
     override func mouseMoved(with e: NSEvent) { track(e) }
     override func mouseExited(with e: NSEvent) {
         if bounds.contains(convert(e.locationInWindow, from: nil)) { return }   // relayout noise, still inside
-        dbg("left window"); if shown, field.currentEditor() == nil { show(false, after: 0.3) }
+        dbg("left window"); if shown, field.currentEditor() == nil { show(false, after: 0.35) }
     }
     func track(_ e: NSEvent) {
         let fromTop = bounds.height - convert(e.locationInWindow, from: nil).y
         if fromTop <= (shown ? barH * 2 : barH) { show(true) }   // back in the zone also calls off a pending hide
-        else if shown, field.currentEditor() == nil { show(false, after: 0.3) }
+        else if shown, field.currentEditor() == nil { show(false, after: 0.35) }
     }
 }
 let zone = Zone(frame: root.bounds)

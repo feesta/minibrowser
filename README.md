@@ -6,7 +6,7 @@ mouse to the top edge and the window grows upward by a strip, the bar sliding up
 from behind the page and fading in over 150ms, with back,
 forward, the address and a reload button that turns into stop while a page is
 loading; the page itself never moves. The bar stays up while the mouse is in it or
-in the strip of page just below it; 300ms after the mouse leaves, it fades and slides
+in the strip of page just below it; 350ms after the mouse leaves, it fades and slides
 back down behind the page as the window shrinks back. (At the very top
 of the screen there is no room to grow, so the window slides down for the bar
 and back up after.) Drag the bar's putty
