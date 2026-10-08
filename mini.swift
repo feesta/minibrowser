@@ -77,20 +77,20 @@ class HW: NSButton {
     }
 }
 
-// Reload: an open ring in the arrows' bold stroke, ending in their chevron head, turning clockwise
-let reloadIcon = NSImage(size: NSSize(width: 16, height: 16), flipped: false) { _ in
-    let c = NSPoint(x: 8, y: 7.4), r: CGFloat = 5, w: CGFloat = 2.1, leg: CGFloat = 4.2
-    let end: CGFloat = 85   // the head sits just past 12 o'clock, degrees from 3 o'clock
+// Reload: an open ring in the arrows' stroke, running clockwise up over the top into a short straight
+// lead-in and the → arrow's chevron, which points straight right so both of its sides stand clear of the ring
+let reloadIcon = NSImage(size: NSSize(width: 24, height: 24), flipped: false) { _ in
+    let c = NSPoint(x: 13.25, y: 12), r: CGFloat = 4.8, w: CGFloat = 1.8, leg: CGFloat = 3.6
+    let end = 100 * CGFloat.pi / 180   // the ring stops just left of 12 o'clock, after 285° clockwise
     let ring = NSBezierPath()
-    ring.appendArc(withCenter: c, radius: r, startAngle: end + 300, endAngle: end, clockwise: true)
+    ring.appendArc(withCenter: c, radius: r, startAngle: 100 + 285, endAngle: 100, clockwise: true)
+    let base = NSPoint(x: c.x + r * cos(end), y: c.y + r * sin(end)), tip = NSPoint(x: base.x + 2.6, y: base.y)
+    ring.line(to: tip)
     ring.lineWidth = w; ink.setStroke(); ring.stroke()
-    // chevron tip nudged a little past the ring's end, legs swept back 45° either side of the clockwise tangent
-    let a = end * .pi / 180, back = a + .pi / 2
-    let tip = NSPoint(x: c.x + r * cos(a) + 0.9 * sin(a), y: c.y + r * sin(a) - 0.9 * cos(a))
-    let head = NSBezierPath()
-    for s: CGFloat in [-1, 1] {
-        head.move(to: NSPoint(x: tip.x + leg * cos(back + s * .pi / 4), y: tip.y + leg * sin(back + s * .pi / 4))); head.line(to: tip)
-    }
+    let head = NSBezierPath()   // one path, so the point is mitered rather than two butt ends
+    head.move(to: NSPoint(x: tip.x - leg * 0.7071, y: tip.y + leg * 0.7071))
+    head.line(to: tip)
+    head.line(to: NSPoint(x: tip.x - leg * 0.7071, y: tip.y - leg * 0.7071))
     head.lineWidth = w; head.lineJoinStyle = .miter; head.stroke()
     return true
 }
