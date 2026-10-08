@@ -32,4 +32,5 @@ nothing exists under ~/Library/WebKit/mini, ~/Library/Caches/mini or
 ~/Library/HTTPStorages/mini.binarycookies.
 
 Files: `mini.swift` (the whole app), `home.html` + `putty-ink.css` (start page,
-loaded from the folder next to the binary), `build.sh`.
+loaded from the folder next to the binary), `icon.png` (the Dock icon, also loaded
+from next to the binary), `build.sh`.
