@@ -1,6 +1,6 @@
 /* putty-ink.css — the Putty & Ink design system for the web.
    Flat putty panels, ink monospace, signal orange, hard 1.5px borders.
-   Light-only by design: see STYLE.md.
+   Light-only by design.
    Tokens and classes keep the `pl-` prefix from the original Plenty build. */
 
 :root {

@@ -218,6 +218,15 @@ func go(_ s: String) {
     else { web.load(URLRequest(url: url)) }
 }
 
+// About panel text. The LICENSE file next to the source is the same text.
+let mit = """
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+
 class Ctl: NSObject, NSWindowDelegate, WKNavigationDelegate, NSApplicationDelegate, NSTextFieldDelegate {
     func windowWillClose(_ n: Notification) { NSApp.terminate(nil) }
     func windowDidResize(_ n: Notification) { placeWeb() }
@@ -241,6 +250,36 @@ class Ctl: NSObject, NSWindowDelegate, WKNavigationDelegate, NSApplicationDelega
     @objc func forward(_ s: Any?) { web.goForward() }
     @objc func stopOrReload(_ s: Any?) { if web.isLoading { web.stopLoading(); sync() } else { web.reload() } }
     @objc func reload(_ s: Any?) { web.reload() }
+    // About: a small putty panel with the name, what it is, who made it and the license
+    var aboutPanel: NSPanel?
+    @objc func about(_ s: Any?) {
+        if aboutPanel == nil {
+            let w: CGFloat = 420, pad: CGFloat = 24, inner = w - pad * 2, faint = ink.withAlphaComponent(0.55)
+            let lines: [(String, CGFloat, NSFont.Weight, NSColor, CGFloat, CGFloat)] = [   // text, size, weight, color, kern, gap below
+                ("mini", 22, .bold, ink, 3, 6),
+                ("a one-window webkit browser for macOS that forgets everything on quit", 13, .semibold, ink, 0, 14),
+                ("© 2026 jeff easter · mit license\nbuilt on apple's appkit and webkit; no third-party code", 12, .regular, faint, 0, 14),
+                (mit.trimmingCharacters(in: .newlines), 11, .regular, faint, 0, 0),
+            ]
+            var labels: [(NSTextField, CGFloat, CGFloat)] = [], total = pad + 20   // paddings: 20 top, 24 bottom
+            for (text, size, weight, color, kern, gap) in lines {
+                let t = NSTextField(wrappingLabelWithString: "")
+                t.attributedStringValue = NSAttributedString(string: text, attributes: [.font: NSFont.monospacedSystemFont(ofSize: size, weight: weight), .foregroundColor: color, .kern: kern])
+                let h = t.cell!.cellSize(forBounds: NSRect(x: 0, y: 0, width: inner, height: 10_000)).height.rounded(.up)
+                labels.append((t, h, gap)); total += h + gap
+            }
+            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: w, height: total), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            p.titleVisibility = .hidden; p.titlebarAppearsTransparent = true
+            p.backgroundColor = putty; p.appearance = NSAppearance(named: .aqua); p.isReleasedWhenClosed = false
+            var top = total - 20
+            for (t, h, gap) in labels {
+                t.frame = NSRect(x: pad, y: top - h, width: inner, height: h)
+                p.contentView!.addSubview(t); top -= h + gap
+            }
+            aboutPanel = p
+        }
+        aboutPanel!.center(); aboutPanel!.makeKeyAndOrderFront(nil)
+    }
     func leaveField() { win.makeFirstResponder(web); if !inZone() { show(false) } }
     // esc in the field: give up and hide the bar
     func control(_ c: NSControl, textView: NSTextView, doCommandBy sel: Selector) -> Bool {
@@ -278,6 +317,8 @@ field.target = ctl; field.action = #selector(Ctl.enter(_:))
 // Menus: app (navigation) + edit (so paste works in the field)
 let menu = NSMenu()
 let appItem = NSMenuItem(); menu.addItem(appItem); let m = NSMenu()
+m.addItem(withTitle: "About mini", action: #selector(Ctl.about(_:)), keyEquivalent: "").target = ctl
+m.addItem(NSMenuItem.separator())
 m.addItem(withTitle: "Open Location…", action: #selector(Ctl.openLocation(_:)), keyEquivalent: "l").target = ctl
 m.addItem(withTitle: "Reload", action: #selector(Ctl.reload(_:)), keyEquivalent: "r").target = ctl
 m.addItem(withTitle: "Back", action: #selector(Ctl.back(_:)), keyEquivalent: "[").target = ctl

@@ -1,35 +1,42 @@
 # mini
 
-A one-window WebKit browser for macOS, ~110–135 MB all in, in the Putty & Ink
-style. No tabs, no extensions, no sync. The page fills the whole window; move the
-mouse to the top edge and the window grows upward by a strip, the bar sliding up
-from behind the page and fading in over 150ms, with back,
-forward, the address and a reload button that turns into stop while a page is
-loading; the page itself never moves. The bar stays up while the mouse is in it or
-in the strip of page just below it; 350ms after the mouse leaves, it fades and slides
-back down behind the page as the window shrinks back. (At the very top
-of the screen there is no room to grow, so the window slides down for the bar
-and back up after.) Drag the bar's putty
-background to move the window, the way a title bar would. Only http, https and
-file urls load; a page or link that points at any other scheme is dropped, so nothing
-in the browser can ever open another app.
+A tiny one-window web browser for macOS.
+
+Most browsers end up using a lot of memory just to show a few pages. mini is
+the no-frills version: one window, one page, no tabs, no extensions, no sync,
+no history. It's built on the WebKit that already ships with macOS, the whole
+app is a single Swift file, and it sits at roughly 110–135 MB.
+
+Nothing sticks around. Cookies, cache, local storage and history live in memory
+and are gone when you quit, and the app wipes WebKit's on-disk store on the way
+out as well.
+
+## Using it
 
 ```
-./build.sh
+./build.sh                  # needs the Xcode Command Line Tools
 ./mini                      # opens home.html
 ./mini https://example.com
 ./mini ~/some/page.html
 ```
 
-Keys: ⌘L show the bar and focus the address (esc hides it) · ⌘R reload · ⌘[ back · ⌘] forward · ⌘Q quit.
-Closing the window quits. The address border turns orange while a page loads.
-Set MINI_DEBUG=1 to log the bar's show/hide events to stderr.
+The page fills the window. Move the mouse to the top edge and a bar slides out
+with back, forward, the address and a reload button that turns into stop while
+a page loads. It tucks away again when the mouse leaves. Drag the bar's
+background to move the window.
 
-Nothing persists. The web view uses WebKit's non-persistent data store, so
-cookies, cache, local storage, IndexedDB and history live in memory and vanish
-on quit; the app also wipes its default store on exit. Verified: after a run
-nothing exists under ~/Library/WebKit/mini, ~/Library/Caches/mini or
-~/Library/HTTPStorages/mini.binarycookies.
+⌘L address bar · ⌘R reload · ⌘[ back · ⌘] forward · ⌘Q quit
 
-Files: `mini.swift` (the whole app), `home.html` + `putty-ink.css` (start page,
-loaded from the folder next to the binary), `build.sh`.
+Only http, https and file URLs load. Anything else is dropped, so a page can
+never open another app.
+
+## Files
+
+- `mini.swift` – the whole app
+- `home.html`, `putty-ink.css` – the start page, loaded from the folder next to the binary
+- `build.sh`
+
+## License
+
+MIT, see [LICENSE](LICENSE). mini uses only the AppKit and WebKit frameworks
+that come with macOS; there is no third-party code in it.
